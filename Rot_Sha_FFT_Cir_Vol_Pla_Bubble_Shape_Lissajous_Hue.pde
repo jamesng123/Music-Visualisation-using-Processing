@@ -103,6 +103,9 @@ void draw()
 {
   if (playFlag == true) {
 
+    // to connect to Phillips Hue "http://<IP ADDR OF BRIDGE>/api/<GENERATED API KEY>/lights/<LIGHT NUMBER>/state"
+    PostRequest put = new PostRequest("http://192.168.1.201/api/aN-2gDI1JkTvIyZ-YoPoK5tam-JKHDN2KMfRpwqS/lights/1/state");
+
     song.play();  
     beat.detect(song.mix);  
     fft.forward(song.mix);
@@ -119,7 +122,7 @@ void draw()
     lValue += lFade/100;
 
 
-    // Average out the sum of FFT band readings
+    // Average out the sum of FFT band readings. This is used for the background colour
     if (frameCount % 150 == 0) {
       initial =  count;
       count = fft_sum/(2.5*bands);
@@ -133,11 +136,9 @@ void draw()
       beatCount = 0;
     }
 
-
-
-
     background(currentColour);
-    //println(currentColour);
+    
+    // When there is a beat
     pushStyle();
     if ( beat.isOnset() ) { 
       outerShape.beatShape = 140;
@@ -173,12 +174,10 @@ void draw()
       c3 = random(255);
       c4 = random(255);
       beatCount +=  1;
+      
       // change the light on the beat
-
       String k = "{\"bri\":255}";
-      PostRequest put = new PostRequest("http://192.168.1.201/api/aN-2gDI1JkTvIyZ-YoPoK5tam-JKHDN2KMfRpwqS/lights/1/state");
       put.method("PUT");
-
       put.addJson(k);
       put.send(); // stops program until complete
 
@@ -244,6 +243,7 @@ void draw()
     vol = map(volume, 0, 100, -70, 0);
     song.setGain(vol);
 
+    // Parametric/Lissajous shape
     pushStyle();
     strokeWeight(4);
     lissjousColour = color(c1, c2, c3, c4);
@@ -257,20 +257,21 @@ void draw()
     popMatrix();
     popStyle();
 
+    // Matching the colour of the Phillips Hue to the colour of the background
     if (frameCount % 30 == 0) {
       Color c = new Color(currentColour);
 
       String k = "{\"xy\":[" + getRGBtoXY(c)[0] + ", " + getRGBtoXY(c)[1] + "], \"bri\":50}";
 
-      PostRequest put = new PostRequest("http://192.168.1.201/api/aN-2gDI1JkTvIyZ-YoPoK5tam-JKHDN2KMfRpwqS/lights/1/state");
       put.method("PUT");
 
       put.addJson(k);
-      put.send(); // stops program until complete
+      put.send();
     }
   }
 }
 
+// Adds songs to scrollable list.
 void Songs(int n) {  
   if (!(songName.contentEquals(""))) {
     song.pause();
@@ -295,6 +296,7 @@ void keyPressed() {
   }
 }
 
+// Change RGB colour to XY colour in the CIE colourmetry
 public static double[] getRGBtoXY(Color c) {
   // For the hue bulb the corners of the triangle are:
   // -Red: 0.675, 0.322
