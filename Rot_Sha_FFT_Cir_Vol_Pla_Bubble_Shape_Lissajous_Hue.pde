@@ -16,7 +16,9 @@ float offsetX = 0;
 float offsetY = -50;
 float fftOffsetChangerX = 0.75;
 float fftOffsetChangerY = 0.75;
+int bandNum = 0;
 
+color currentColour;
 
 Bubble b;
 int numOfBubbles = 15;
@@ -25,10 +27,10 @@ Shape innerShape;
 Shape outerShape;
 
 Lissajous lissajous;
-float t = 0;
-int trail_lines = 10;
+float t = 1000;
+int trailLines = 6;
 color lissjousColour;
-float c1, c2, c3, c4 = random(255);
+float c4 = 0;
 
 int bands = 512;
 float angle = 0;
@@ -117,7 +119,7 @@ void draw()
     }
 
 
-    color currentColour = lerpColor(color(initial * ranRed, initial * ranGreen, 150), color(count * ranRed, count * ranGreen, 150), lValue);
+    currentColour = lerpColor(color(initial * ranRed, initial * ranGreen, 150), color(count * ranRed, count * ranGreen, 150), lValue);
 
     lValue += lFade/100;
 
@@ -137,7 +139,7 @@ void draw()
     }
 
     background(currentColour);
-    
+
     // When there is a beat
     pushStyle();
     if ( beat.isOnset() ) { 
@@ -169,17 +171,15 @@ void draw()
     }
 
     if (!(beat.isOnset()) && beatF == true) {
-      c1 = random(255);
-      c2 = random(255);
-      c3 = random(255);
-      c4 = random(255);
       beatCount +=  1;
-      
+
       // change the light on the beat
-      String k = "{\"bri\":255}";
-      put.method("PUT");
-      put.addJson(k);
-      put.send(); // stops program until complete
+      //String k = "{\"bri\":255}";
+      //put.method("PUT");
+      //put.addJson(k);
+      //put.send(); // stops program until complete
+
+      thread("UpdateBrightnessForBeat");
 
 
       beatF = false;
@@ -206,7 +206,7 @@ void draw()
     }
 
     pushStyle();
-    for (int i = 0; i < bands; i+=8) {
+    for (int i = 0; i < bands - (bandNum * 8); i+=8) {
       stroke(255, count, count*0.7);
       strokeWeight(5);
       angle = radians(i*360/bands);
@@ -246,29 +246,61 @@ void draw()
     // Parametric/Lissajous shape
     pushStyle();
     strokeWeight(4);
-    lissjousColour = color(c1, c2, c3, c4);
+    lissjousColour = color(255, count, count*0.7, c4);
     stroke(lissjousColour);
     pushMatrix();
     translate(width/2, height/2);
-    for (int i = 0; i < trail_lines; i++) {
+    for (int i = 0; i < trailLines; i++) {
       line(lissajous.x1(t + i), lissajous.y1(t + i), lissajous.x2(t + i), lissajous.y2(t + i));
     }
     t += map(bpmSet, 0, 200, 0.05, 1);
     popMatrix();
     popStyle();
 
-    // Matching the colour of the Phillips Hue to the colour of the background
-    if (frameCount % 30 == 0) {
-      Color c = new Color(currentColour);
 
-      String k = "{\"xy\":[" + getRGBtoXY(c)[0] + ", " + getRGBtoXY(c)[1] + "], \"bri\":50}";
+    if (t < 1373) {
+      c4 = 0;
+    } else {
+      c4 = 255;
+      bandNum = 6;
+    }
 
-      put.method("PUT");
+    if (t > 3257) {
+      bandNum = 3;
+      trailLines = 3;
+    }
 
-      put.addJson(k);
-      put.send();
+    if (t > 5142) {
+      bandNum = 0;
+      trailLines = 0;
+    }
+
+    //Matching the colour of the Phillips Hue to the colour of the background
+    //Check six times a second
+    if (frameCount % 10 == 0) {
+      thread("UpdateColourForBackground");
     }
   }
+}
+
+//// When there is a beat make the brightness of the light its max value
+void UpdateBrightnessForBeat() {
+  PostRequest put = new PostRequest("http://192.168.1.201/api/aN-2gDI1JkTvIyZ-YoPoK5tam-JKHDN2KMfRpwqS/lights/1/state");
+  put.method("PUT");
+  String brightness = "{\"bri\":" + 255 + "}";
+  put.addJson(brightness);
+  put.send();
+}
+
+//// Change the colour of the lamp to match the background. Change the brightness to be lower.
+void UpdateColourForBackground() {
+  PostRequest put = new PostRequest("http://192.168.1.201/api/aN-2gDI1JkTvIyZ-YoPoK5tam-JKHDN2KMfRpwqS/lights/1/state");
+  put.method("PUT");
+  Color c = new Color(currentColour);
+  String k = "{\"xy\":[" + getRGBtoXY(c)[0] + ", " + getRGBtoXY(c)[1] + "], \"bri\":50}";
+  put.method("PUT");
+  put.addJson(k);
+  put.send();
 }
 
 // Adds songs to scrollable list.
