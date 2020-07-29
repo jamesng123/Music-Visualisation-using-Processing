@@ -73,6 +73,16 @@ void setup() {
 
   cp5 = new ControlP5(this);
   cp5.begin();
+
+  cp5.addButton("Pause")
+    .setBroadcast(false)
+    .setValue(0)
+    .setPosition(10, 50)
+    .setSize(200, 20)
+    .setBroadcast(true)
+    ;
+
+
   cp5.addSlider("volume")
     .setPosition(10, 20)
     .setSize(200, 20)
@@ -90,7 +100,7 @@ void setup() {
   }
 
   cp5.addScrollableList("Songs")
-    .setPosition(10, 50)
+    .setPosition(10, 80)
     .setSize(200, 100)
     .setBarHeight(20)
     .setItemHeight(20)
@@ -325,6 +335,24 @@ void keyPressed() {
       b.ydirection *= -1;
       b.xdirection *= -1;
     }
+  }
+  if (key == 's')
+    if (looping) {  
+      song.pause();
+      noLoop();
+    } else {  
+      song.play();
+      loop();
+    }
+}
+
+public void Pause() {
+  if (looping) { 
+    song.pause();
+    noLoop();
+  } else {   
+    song.play();
+    loop();
   }
 }
 
